@@ -138,7 +138,13 @@ export default function DashboardClient({ userEmail, userId, initialItems }: { u
         playAloud(data.response, language);
         saveSession(text, data.response);
       } else {
-        setAiResponse(`Error: ${data.error || 'Unknown error occurred.'}`);
+        const errorMsg = data.error || '';
+        if (errorMsg.includes('429') || errorMsg.includes('quota')) {
+          setAiResponse("Whoa, you're asking questions too fast! The free tier allows 15 questions per minute. Please wait about 60 seconds and try again.");
+          playAloud("Whoa, you're asking questions too fast! Please wait a minute and try again.", language);
+        } else {
+          setAiResponse(`Error: ${errorMsg || 'Unknown error occurred.'}`);
+        }
       }
     } catch (error) {
       setAiResponse('Network error occurred.');
@@ -153,14 +159,35 @@ export default function DashboardClient({ userEmail, userId, initialItems }: { u
     
     const utterance = new SpeechSynthesisUtterance(text);
     
-    // Find a friendly voice
+    // Find a friendly female voice
     const voices = window.speechSynthesis.getVoices();
     const targetLang = lang === 'en' ? 'en-IN' : 'hi-IN';
-    const friendlyVoice = voices.find(v => v.lang === targetLang && (v.name.includes('Female') || v.name.includes('Google') || v.name.includes('Zira') || v.name.includes('Natural'))) 
-                       || voices.find(v => v.lang.includes(lang === 'en' ? 'en' : 'hi'));
     
-    if (friendlyVoice) {
-      utterance.voice = friendlyVoice;
+    let femaleVoice = voices.find(v => 
+      (v.lang === targetLang || v.lang.startsWith(lang)) && 
+      (v.name.toLowerCase().includes('female') || 
+       v.name.toLowerCase().includes('zira') || 
+       v.name.toLowerCase().includes('heera') || 
+       v.name.toLowerCase().includes('neerja') ||
+       v.name.toLowerCase().includes('samantha'))
+    );
+
+    if (!femaleVoice) {
+      femaleVoice = voices.find(v => 
+        (v.lang === targetLang || v.lang.startsWith(lang)) && 
+        !v.name.toLowerCase().includes('male') && 
+        !v.name.toLowerCase().includes('david') && 
+        !v.name.toLowerCase().includes('ravi') &&
+        !v.name.toLowerCase().includes('mark')
+      );
+    }
+    
+    if (!femaleVoice) {
+      femaleVoice = voices.find(v => v.lang.startsWith(lang));
+    }
+    
+    if (femaleVoice) {
+      utterance.voice = femaleVoice;
     }
     
     utterance.lang = targetLang;
