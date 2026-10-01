@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
           getAll() {
             return cookieStore.getAll()
           },
-          setAll(cookiesToSet) {
+          setAll(cookiesToSet: any[]) {
             // Ignored in API route
           },
         },
